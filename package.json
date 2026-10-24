@@ -1,0 +1,17 @@
+{
+  "name": "shopify-forms-exporter-userscript",
+  "version": "1.0.0",
+  "description": "Inline Shopify Forms CSV exporter for userscript managers",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node --check shopify-forms-exporter.user.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  }
+}
