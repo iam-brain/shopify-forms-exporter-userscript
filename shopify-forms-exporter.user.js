@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Shopify Forms — Export submissions
 // @namespace    https://github.com/iam-brain/shopify-forms-exporter-userscript
-// @version      1.0.2
+// @version      1.0.3
 // @description  Adds an inline Shopify-style button to export every submission for a form as CSV.
 // @author       iam-brain; based on ozhehkovski/shopify_forms_exporter
 // @license      MIT
@@ -125,6 +125,7 @@
     lastError = error;
     const label = message || 'Export submissions';
     if (status && status.textContent !== label) status.textContent = label;
+    if (button) button.setAttribute(button.localName === 's-internal-button' ? 'accessibilitylabel' : 'aria-label', label);
     if (status) status.style.color = error ? 'var(--p-color-text-critical, #b42318)' : 'inherit';
   }
 

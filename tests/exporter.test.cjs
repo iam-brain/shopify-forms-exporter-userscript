@@ -114,6 +114,7 @@ test('all progress stays inside the disabled button until file resolution comple
   }) });
   e.button().click();
   assert.equal(e.button().textContent, 'Preparing export…');
+  assert.equal(e.button().getAttribute('accessibilitylabel'), 'Preparing export…');
   assert.ok(e.button().hasAttribute('disabled'));
   assert.equal(e.button().getAttribute('aria-busy'), 'true');
   await new Promise(resolve => setImmediate(resolve));
@@ -125,6 +126,7 @@ test('all progress stays inside the disabled button until file resolution comple
   returnFiles(json({ data: { nodes: [{ id: 'gid://shopify/GenericFile/42', url: 'https://cdn.shopify.com/example.pdf' }] } }));
   await settle(e);
   assert.equal(e.button().textContent, '1 submissions exported');
+  assert.equal(e.button().getAttribute('accessibilitylabel'), '1 submissions exported');
   assert.equal(e.button().hasAttribute('disabled'), false);
   assert.equal(e.button().parentElement.children.length, 1);
   e.dom.window.close();
