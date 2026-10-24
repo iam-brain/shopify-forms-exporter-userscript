@@ -43,7 +43,9 @@ The script matches all `admin.shopify.com/store/*` routes so it can notice navig
 
 Like the original extension, the exporter relies on Shopify's **undocumented internal Admin GraphQL endpoint**, including `allMetaobjects`. Shopify can change that endpoint or its page structure. Public Admin API schema validation cannot validate that internal submissions query. The separate file-resolution query validates against the public 2026-10 schema, which does not establish compatibility with the internal endpoint.
 
-Use a current browser with `AbortSignal.any`, `AbortSignal.timeout`, and native HTML dialog support. Tampermonkey/Violentmonkey metadata is provided; installation and a complete live Shopify export have not yet been verified. Shopify's current header structure was inspected in a signed-in browser, and behavior is covered by automated DOM/network fixtures. This is a userscript, not a Shopify app or an official Shopify feature.
+Use a current browser with `AbortSignal.any`, `AbortSignal.timeout`, and native HTML dialog support. Version 1.0.1 was installed and enabled in Edge with Tampermonkey 5.5.1. Its visible results-page header button and complete live CSV export were verified: exported IDs matched every entry across all results pages, file references resolved, and the downloaded CSV parsed without malformed rows. The Forms overview chooser and Violentmonkey installation are covered by metadata/fixtures but have not been verified live. This is a userscript, not a Shopify app or an official Shopify feature.
+
+If the button is missing after an update, check that the script's toggle is enabled in Tampermonkey, then reload Admin. Version 1.0.1 fixes placement on Shopify's current internal page component, which manually assigns its content slots.
 
 If you see **Session token unavailable**, reload Admin, wait for the form to load, and retry. Confirm your manager allows execution in the page context. A 401/403 means the session expired or the current staff account lacks access.
 

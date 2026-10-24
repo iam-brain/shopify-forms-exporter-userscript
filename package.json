@@ -1,6 +1,6 @@
 {
   "name": "shopify-forms-exporter-userscript",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Inline Shopify Forms CSV exporter for userscript managers",
   "private": true,
   "scripts": {
