@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Shopify Forms — Export submissions
 // @namespace    https://github.com/iam-brain/shopify-forms-exporter-userscript
-// @version      1.0.0
+// @version      1.0.1
 // @description  Adds an inline Shopify-style button to export every submission for a form as CSV.
 // @author       iam-brain; based on ozhehkovski/shopify_forms_exporter
 // @license      MIT
@@ -215,12 +215,10 @@
     const page = main.querySelector('s-internal-page');
     const toolbar = main.querySelector('s-internal-toolbar');
     const header = main.querySelector('.Polaris-Page-Header__Row, .Polaris-Page-Header, header');
-    // The internal page's secondary-actions are cloned, losing custom listeners.
-    // primaryAction is a genuine slot and keeps this secondary-style button live.
-    const target = page ?? toolbar?.shadowRoot?.querySelector('.header-content') ?? header ?? main;
+    // Shopify manually assigns its page slots; inserting a light-DOM child can
+    // leave it in the content area. Use the rendered actions container directly.
+    const target = page?.shadowRoot?.querySelector('.actions') ?? toolbar?.shadowRoot?.querySelector('.header-content') ?? header ?? main;
     if (!control) makeControl();
-    if (target === page) control.setAttribute('slot', 'primaryAction');
-    else control.removeAttribute('slot');
     if (control.parentNode !== target) {
       if (target === main) target.prepend(control);
       else target.append(control);

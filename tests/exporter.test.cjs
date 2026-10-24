@@ -28,11 +28,13 @@ function setup({ path = entries, html = pageHTML, fetch, meta = true, native = t
   w.URL.revokeObjectURL = () => {};
   w.HTMLAnchorElement.prototype.click = function () { downloads.push(this.download); };
   if (native) w.customElements.define('s-internal-button', class extends w.HTMLElement {});
+  for (const page of w.document.querySelectorAll('s-internal-page')) page.attachShadow({ mode: 'open' }).innerHTML = '<div class="page-header"><div class="actions"></div></div><slot></slot>';
   w.fetch = (...args) => { calls.push(args); return fetch ? fetch(...args) : Promise.resolve(json(pageData([]))); };
   w.eval(source);
   w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
   const tick = () => intervals.forEach(fn => fn());
-  return { dom, w, calls, blobs, downloads, tick, button: () => w.document.querySelector('#shopify-forms-exporter > :first-child'), status: () => w.document.querySelector('[role="status"]')?.textContent ?? '' };
+  const control = () => w.document.querySelector('s-internal-page')?.shadowRoot?.querySelector('#shopify-forms-exporter') ?? w.document.querySelector('#shopify-forms-exporter');
+  return { dom, w, calls, blobs, downloads, tick, button: () => control()?.firstElementChild ?? null, status: () => control()?.querySelector('[role="status"]')?.textContent ?? '' };
 }
 
 async function settle(env) {
@@ -46,9 +48,10 @@ async function settle(env) {
 test('one native page action survives rerenders, reinjection, and SPA navigation', () => {
   const e = setup();
   assert.equal(e.button().localName, 's-internal-button');
-  assert.equal(e.button().parentElement.slot, 'primaryAction');
+  assert.equal(e.button().parentElement.parentElement.className, 'actions');
+  assert.equal(e.button().getRootNode(), e.w.document.querySelector('s-internal-page').shadowRoot);
   e.tick(); e.tick(); e.w.eval(source);
-  assert.equal(e.w.document.querySelectorAll('#shopify-forms-exporter').length, 1);
+  assert.equal(e.w.document.querySelector('s-internal-page').shadowRoot.querySelectorAll('#shopify-forms-exporter').length, 1);
   e.w.document.querySelector('main').innerHTML = '<s-internal-page heading="New form"></s-internal-page>';
   e.tick();
   assert.ok(e.button().isConnected);
