@@ -23,6 +23,8 @@ If the install link displays source instead of an installation prompt, create a 
 
 The script follows Shopify's navigation without requiring a refresh and restores its button when Shopify rerenders a page. It uses Shopify's registered native button component when available, with a plain HTML button styled to match Polaris as a fallback. The embedded app uses the parent Admin header, so there is one export button per page.
 
+Progress, errors, warnings, and completion messages appear inside the button. It stays disabled until the export finishes, then shows **N submissions exported** (with the actual count) and becomes clickable again. Repeating a successful export of the same form requires confirmation; Cancel keeps the completed state. This completion history stays in memory for the current page session and resets on reload.
+
 **The export includes every submission for the chosen form.** Table filters, selected rows, date ranges, and the currently visible results page do not limit it. On the overview, the chooser contains form links currently rendered by the Forms app; open a form directly if it is not listed.
 
 ## CSV behavior

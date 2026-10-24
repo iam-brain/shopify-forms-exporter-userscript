@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Shopify Forms — Export submissions
 // @namespace    https://github.com/iam-brain/shopify-forms-exporter-userscript
-// @version      1.0.1
+// @version      1.0.2
 // @description  Adds an inline Shopify-style button to export every submission for a form as CSV.
 // @author       iam-brain; based on ozhehkovski/shopify_forms_exporter
 // @license      MIT
@@ -59,6 +59,7 @@
   let running = null;
   let lastMessage = '';
   let lastError = false;
+  const completedExports = new Set();
   let control;
   let button;
   let status;
@@ -122,8 +123,9 @@
   function notify(message, error = false) {
     lastMessage = message;
     lastError = error;
-    if (status && status.textContent !== message) status.textContent = message;
-    if (status) status.style.color = error ? 'var(--p-color-text-critical, #b42318)' : 'var(--p-color-text-secondary, #616161)';
+    const label = message || 'Export submissions';
+    if (status && status.textContent !== label) status.textContent = label;
+    if (status) status.style.color = error ? 'var(--p-color-text-critical, #b42318)' : 'inherit';
   }
 
   function makeControl() {
@@ -134,12 +136,11 @@
     button = document.createElement(customElements.get('s-internal-button') ? 's-internal-button' : 'button');
     button.setAttribute('type', 'button');
     button.setAttribute('variant', 'secondary');
-    button.setAttribute('aria-describedby', `${ID}-status`);
     if (button.localName === 'button') {
       button.className = 'Polaris-Button Polaris-Button--pressable Polaris-Button--variantSecondary Polaris-Button--sizeMedium Polaris-Button--textAlignCenter';
       button.style.cssText = 'font:inherit;font-size:13px;font-weight:550;line-height:20px;padding:5px 12px;border:1px solid var(--p-color-border,#c9cccf);border-radius:var(--p-border-radius-200,8px);background:var(--p-color-bg-surface,#fff);color:var(--p-color-text,#303030);box-shadow:0 1px 0 #0000000d;cursor:pointer';
     }
-    button.textContent = 'Export submissions';
+    button.style.maxWidth = '38ch';
     button.title = 'Download all submissions for this form as CSV. Table filters and selections do not limit the export.';
     button.addEventListener('click', event => {
       event.preventDefault();
@@ -154,8 +155,9 @@
     status.id = `${ID}-status`;
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
-    status.style.cssText = 'font-size:12px;max-width:38ch;overflow-wrap:anywhere';
-    control.append(button, status);
+    status.style.cssText = 'white-space:normal;overflow-wrap:anywhere';
+    button.append(status);
+    control.append(button);
     notify(lastMessage, lastError);
   }
 
@@ -345,6 +347,8 @@
 
   async function startExport(info) {
     if (running) return;
+    const exportKey = `${info.store}/${info.appId}/${info.formId}`;
+    if (completedExports.has(exportKey) && !window.confirm('The export already completed successfully. Are you sure you want to export again?')) return;
     const controller = new AbortController();
     running = controller;
     const key = currentKey;
@@ -360,7 +364,8 @@
       sync();
       if (controller.signal.aborted || currentKey !== key) return;
       download(rows, `form_${info.formId}_submissions_${new Date().toISOString().slice(0, 10)}.csv`);
-      notify(`${rows.length.toLocaleString()} submissions exported.${unresolved ? ' Some file links could not be resolved; their IDs were kept.' : ''}`);
+      completedExports.add(exportKey);
+      notify(`${rows.length.toLocaleString()} submissions exported${unresolved ? '. Some file links could not be resolved; their IDs were kept.' : ''}`);
     } catch (error) {
       if (!controller.signal.aborted && currentKey === key) notify(error.name === 'TimeoutError' ? 'Shopify took too long to respond. Please try again.' : error.message, true);
     } finally {

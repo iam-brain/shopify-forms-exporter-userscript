@@ -101,7 +101,70 @@ test('exports every page, deduplicates overlaps, unions fields, and protects spr
   assert.ok(csv.includes('"\'+15555550123"'));
   assert.match(csv.split('\r\n')[0], /"late_field","phone"/);
   assert.equal((csv.match(/gid:\/\/shopify\/Metaobject\/1/g) || []).length, 1);
-  assert.equal(e.status(), '2 submissions exported.');
+  assert.equal(e.status(), '2 submissions exported');
+  e.dom.window.close();
+});
+
+test('all progress stays inside the disabled button until file resolution completes', async () => {
+  let returnSubmissions;
+  let returnFiles;
+  const e = setup({ fetch: (_, init) => new Promise(resolve => {
+    if (JSON.parse(init.body).operationName === 'Submissions') returnSubmissions = resolve;
+    else returnFiles = resolve;
+  }) });
+  e.button().click();
+  assert.equal(e.button().textContent, 'Preparing export…');
+  assert.ok(e.button().hasAttribute('disabled'));
+  assert.equal(e.button().getAttribute('aria-busy'), 'true');
+  await new Promise(resolve => setImmediate(resolve));
+  returnSubmissions(json(pageData([record(1, [{ key: 'file', value: 'gid://shopify/GenericFile/42' }])])));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(e.button().textContent, /Resolving uploaded files/);
+  assert.ok(e.button().hasAttribute('disabled'));
+  assert.equal(e.downloads.length, 0);
+  returnFiles(json({ data: { nodes: [{ id: 'gid://shopify/GenericFile/42', url: 'https://cdn.shopify.com/example.pdf' }] } }));
+  await settle(e);
+  assert.equal(e.button().textContent, '1 submissions exported');
+  assert.equal(e.button().hasAttribute('disabled'), false);
+  assert.equal(e.button().parentElement.children.length, 1);
+  e.dom.window.close();
+});
+
+test('successful repeats require confirmation, and cancel leaves the completed state untouched', async () => {
+  const e = setup({ fetch: async () => json(pageData([record(1)])) });
+  const prompts = [];
+  let approve = false;
+  e.w.confirm = message => { prompts.push(message); return approve; };
+  e.button().click(); await settle(e);
+  assert.equal(prompts.length, 0);
+  assert.equal(e.button().textContent, '1 submissions exported');
+  const requestCount = e.calls.length;
+  e.button().click(); await settle(e);
+  assert.equal(prompts.length, 1);
+  assert.equal(prompts[0], 'The export already completed successfully. Are you sure you want to export again?');
+  assert.equal(e.calls.length, requestCount);
+  assert.equal(e.downloads.length, 1);
+  assert.equal(e.button().textContent, '1 submissions exported');
+  approve = true;
+  e.button().click(); await settle(e);
+  assert.equal(prompts.length, 2);
+  assert.equal(e.downloads.length, 2);
+  e.w.history.pushState({}, '', base + '/apps/shopify-forms/forms/456'); e.tick();
+  e.button().click(); await settle(e);
+  assert.equal(prompts.length, 2, 'A different form does not inherit repeat confirmation');
+  e.dom.window.close();
+});
+
+test('failed exports remain retryable without a successful-export confirmation', async () => {
+  let fail = true;
+  const e = setup({ fetch: async () => fail ? json({ errors: [{ message: 'Temporary failure' }] }) : json(pageData([record(1)])) });
+  e.w.confirm = () => assert.fail('An unsuccessful export must not require repeat confirmation');
+  e.button().click(); await settle(e);
+  assert.equal(e.button().textContent, 'Temporary failure');
+  assert.equal(e.button().hasAttribute('disabled'), false);
+  fail = false;
+  e.button().click(); await settle(e);
+  assert.equal(e.downloads.length, 1);
   e.dom.window.close();
 });
 
@@ -178,7 +241,7 @@ test('navigation aborts an in-flight export and ignores its late response', asyn
   assert.ok(e.calls[0][1].signal.aborted);
   resolve(); await settle(e);
   assert.equal(e.downloads.length, 0);
-  assert.equal(e.status(), '');
+  assert.equal(e.status(), 'Export submissions');
   e.dom.window.close();
 });
 
